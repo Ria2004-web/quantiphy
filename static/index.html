@@ -1,0 +1,406 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DevPulse | Developer Intelligence</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+body{background:#090e1b;color:#e2e8f0;font-family:Inter,Arial,sans-serif}
+.card{background:#151d30;border:1px solid #283449;border-radius:16px;padding:22px}
+.btn{background:#6366f1;color:white;padding:11px 20px;border-radius:9px;cursor:pointer}
+.btn:hover{background:#4f46e5}
+.field{background:#0b1220;border:1px solid #334155;border-radius:9px;padding:11px;width:100%;color:white}
+.metric{font-size:29px;font-weight:800;color:white}
+.muted{color:#94a3b8;font-size:13px}
+.tag{background:#312e81;color:#c7d2fe;border-radius:20px;padding:5px 11px;font-size:12px}
+.heat{width:12px;height:12px;border-radius:3px;flex-shrink:0}
+a{color:#a5b4fc}
+a:hover{text-decoration:underline}
+nav button{padding:10px;text-align:left;border-radius:8px;width:100%}
+nav button:hover{background:#29344c}
+</style>
+</head>
+
+<body>
+<div class="min-h-screen md:flex">
+
+<aside class="md:w-60 bg-[#111827] p-6 border-r border-slate-800">
+<h1 class="text-2xl font-bold text-indigo-400 mb-2">⚡ DevPulse</h1>
+<p class="muted mb-8">Developer Intelligence</p>
+<nav class="space-y-3">
+<button onclick="go('overview')">◈ Overview</button>
+<button onclick="go('contributions')">▦ Contributions</button>
+<button onclick="go('repositories')">▣ Repositories</button>
+<button onclick="go('matcher')">◎ Job Match Analyzer</button>
+<button onclick="go('assistant')">✦ Portfolio Assistant</button>
+<button onclick="go('readme')">▤ README Generator</button>
+</nav>
+</aside>
+
+<main class="flex-1 p-5 md:p-9 max-w-7xl mx-auto w-full">
+
+<header class="flex flex-wrap justify-between gap-4 mb-8">
+<div>
+<h2 class="text-3xl font-bold">Developer Dashboard</h2>
+<p class="muted mt-2">Track your GitHub journey and career readiness.</p>
+</div>
+<div class="flex flex-wrap gap-2">
+<input id="username" class="field !w-48" value="Ria2004-web" placeholder="GitHub username">
+<button class="btn" onclick="loadProfile()">Load Profile</button>
+<button class="btn !bg-slate-700" onclick="loadProfile(true)">↻ Refresh</button>
+</div>
+</header>
+
+<div id="status" class="muted mb-5" role="status">
+Enter a GitHub username to begin.
+</div>
+
+<section id="overview" class="space-y-6">
+
+<div class="card flex flex-wrap items-center gap-6">
+<img id="avatar" class="w-24 h-24 rounded-full bg-slate-800" alt="GitHub avatar">
+<div class="flex-1">
+<h2 id="name" class="text-2xl font-bold">GitHub Developer</h2>
+<p id="bio" class="muted mt-2">Load your GitHub profile.</p>
+<a id="githubLink" href="#" target="_blank" rel="noopener">View GitHub Profile ↗</a>
+</div>
+<div class="text-center">
+<div id="matchBadge" class="text-3xl font-bold text-indigo-400">—</div>
+<p class="muted">Job Match</p>
+</div>
+</div>
+
+<div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="card"><p class="muted">Followers</p><p class="metric" id="followers">—</p></div>
+<div class="card"><p class="muted">Total Stars</p><p class="metric" id="stars">—</p></div>
+<div class="card"><p class="muted">Repositories</p><p class="metric" id="repoCount">—</p></div>
+<div class="card"><p class="muted">Current Streak</p><p class="metric" id="streak">—</p></div>
+</div>
+
+<div class="grid lg:grid-cols-2 gap-5">
+<div class="card">
+<h3 class="font-bold text-xl mb-4">Top Languages</h3>
+<div class="max-w-xs mx-auto"><canvas id="languageChart"></canvas></div>
+</div>
+<div class="card">
+<h3 class="font-bold text-xl mb-4">Activity Overview</h3>
+<p class="muted">Contributions in the available calendar</p>
+<p id="contributionTotal" class="metric mt-3">—</p>
+<p class="muted mt-5">Longest coding streak</p>
+<p id="longest" class="metric mt-2">—</p>
+</div>
+</div>
+</section>
+
+<section id="contributions" class="card mt-6">
+<h3 class="text-xl font-bold mb-2">Contribution Heatmap</h3>
+<p class="muted mb-5">Daily coding activity over the last year</p>
+<div class="overflow-x-auto">
+<div id="heatmap" class="flex gap-1 min-w-max"></div>
+</div>
+<div class="flex gap-2 items-center mt-5 muted">
+Less
+<span class="heat" style="background:#1e293b"></span>
+<span class="heat" style="background:#14532d"></span>
+<span class="heat" style="background:#15803d"></span>
+<span class="heat" style="background:#22c55e"></span>
+<span class="heat" style="background:#86efac"></span>
+More
+</div>
+</section>
+
+<section id="repositories" class="mt-8">
+<div class="flex flex-wrap justify-between gap-3 mb-5">
+<h3 class="text-xl font-bold">Repositories</h3>
+<input class="field !w-64" id="search" placeholder="Search repositories..." oninput="renderRepos()">
+<select id="filter" class="field !w-40" onchange="renderRepos()">
+<option value="">All languages</option>
+</select>
+</div>
+<div id="repoGrid" class="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+</div>
+</section>
+
+<section id="matcher" class="card mt-8">
+<h3 class="text-xl font-bold mb-2">🎯 Tech Stack Compatibility</h3>
+<p class="muted mb-5">Compare a job description against your GitHub repository languages and topics.</p>
+<textarea id="job" rows="6" class="field" placeholder="Paste the job description here..."></textarea>
+<button class="btn mt-4" onclick="analyze()">Analyze Compatibility</button>
+<div id="matchResult" class="mt-6"></div>
+</section>
+
+<section id="assistant" class="card mt-8">
+<h3 class="text-xl font-bold mb-2">🤖 Portfolio Assistant</h3>
+<p class="muted mb-4">Ask questions about your public GitHub portfolio.</p>
+<div id="chatHistory" class="bg-[#0b1220] rounded-xl p-4 min-h-32 mb-4 space-y-3">
+<p class="muted">Try: Which project should I highlight in an interview?</p>
+</div>
+<div class="flex gap-2">
+<input id="question" class="field" placeholder="Ask about your portfolio...">
+<button class="btn" onclick="askAssistant()">Ask</button>
+</div>
+<p class="muted mt-3">This assistant uses data-grounded responses, not a generative LLM.</p>
+</section>
+
+<section id="readme" class="card mt-8 mb-10">
+<h3 class="text-xl font-bold mb-3">✨ README Generator</h3>
+<p class="muted mb-4">Generate a professional README draft from repository metadata.</p>
+<select id="repoSelect" class="field mb-4"></select>
+<button class="btn" onclick="generateReadme()">Generate README</button>
+<textarea id="readmeOutput" rows="13" class="field mt-5 font-mono text-sm" placeholder="Your generated README will appear here..."></textarea>
+<button class="btn mt-3" onclick="copyReadme()">Copy README</button>
+</section>
+
+<footer class="muted text-center pb-6">
+DevPulse © 2026 | Built with FastAPI, React-inspired UI and GitHub APIs
+</footer>
+</main>
+</div>
+
+<script>
+let profile=null;
+let chart=null;
+const $=id=>document.getElementById(id);
+
+function safe(s){
+ return String(s??"").replace(/[&<>"']/g,c=>({
+ "&":"&amp;","<":"&lt;",">":"&gt;",
+ '"':"&quot;","'":"&#39;"
+ }[c]));
+}
+
+function go(id){
+ $(id).scrollIntoView({behavior:"smooth"});
+}
+
+async function api(url,options={}){
+ const response=await fetch(url,options);
+ let data=await response.json();
+ if(!response.ok)throw Error(data.detail||"Request failed");
+ return data;
+}
+
+function post(url,data){
+ return api(url,{
+ method:"POST",
+ headers:{"Content-Type":"application/json"},
+ body:JSON.stringify(data)
+ });
+}
+
+async function loadProfile(refresh=false){
+ const username=$("username").value.trim();
+ if(!username)return alert("Enter a GitHub username");
+
+ $("status").textContent="Loading GitHub data...";
+ try{
+ profile=await api(
+ "/api/profile/"+encodeURIComponent(username)+
+ (refresh?"?refresh=true":"")
+ );
+ renderProfile();
+ $("status").textContent=profile.stale?
+ "Showing cached data. GitHub refresh was unavailable.":
+ "Profile loaded successfully.";
+ }catch(e){
+ $("status").textContent="Error: "+e.message;
+ }
+}
+
+function renderProfile(){
+ const p=profile;
+ $("avatar").src=p.user.avatar;
+ $("name").textContent=p.user.name;
+ $("bio").textContent=p.user.bio;
+ $("githubLink").href=p.user.url;
+ $("followers").textContent=p.user.followers;
+ $("stars").textContent=p.total_stars;
+ $("repoCount").textContent=p.repositories.length;
+ $("streak").textContent=p.contribution_available?
+ p.streak.current+" days":"N/A";
+ $("longest").textContent=p.contribution_available?
+ p.streak.longest+" days":"N/A";
+ $("contributionTotal").textContent=p.contribution_total??"N/A";
+
+ renderChart();
+ renderHeatmap();
+ renderRepos();
+
+ const languages=[...new Set(
+ p.repositories.map(r=>r.language)
+ )].sort();
+
+ $("filter").innerHTML=
+ '<option value="">All languages</option>'+
+ languages.map(l=>`<option value="${safe(l)}">${safe(l)}</option>`).join("");
+
+ $("repoSelect").innerHTML=p.repositories.map(r=>
+ `<option value="${safe(r.name)}">${safe(r.name)}</option>`
+ ).join("");
+}
+
+function renderChart(){
+ const labels=Object.keys(profile.languages);
+ const values=Object.values(profile.languages);
+ if(chart)chart.destroy();
+
+ chart=new Chart($("languageChart"),{
+ type:"doughnut",
+ data:{
+ labels:labels.length?labels:["No data"],
+ datasets:[{
+ data:values.length?values:[1],
+ backgroundColor:[
+ "#6366f1","#22c55e","#06b6d4",
+ "#f59e0b","#ec4899","#8b5cf6",
+ "#14b8a6","#f97316"
+ ]
+ }]
+ },
+ options:{
+ plugins:{
+ legend:{labels:{color:"#cbd5e1"},position:"bottom"}
+ }
+ }
+ });
+}
+
+function renderHeatmap(){
+ if(!profile.contribution_available){
+ $("heatmap").innerHTML=
+ '<p class="muted">Add a GitHub token to enable real contribution data.</p>';
+ return;
+ }
+
+ const days=profile.contributions;
+ let html="";
+ for(let i=0;i<days.length;i+=7){
+ html+='<div class="flex flex-col gap-1">';
+ days.slice(i,i+7).forEach(d=>{
+ let n=d.contributionCount;
+ let color=n===0?"#1e293b":
+ n<3?"#14532d":n<6?"#15803d":
+ n<10?"#22c55e":"#86efac";
+ html+=`<div class="heat" style="background:${color}"
+ title="${safe(d.date)}: ${n} contributions"></div>`;
+ });
+ html+="</div>";
+ }
+ $("heatmap").innerHTML=html;
+}
+
+function renderRepos(){
+ if(!profile)return;
+ const search=$("search").value.toLowerCase();
+ const language=$("filter").value;
+
+ const repos=profile.repositories.filter(r=>
+ (r.name.toLowerCase().includes(search)||
+ r.description.toLowerCase().includes(search))&&
+ (!language||r.language===language)
+ );
+
+ $("repoGrid").innerHTML=repos.length?
+ repos.map(r=>`
+ <article class="card hover:border-indigo-500 transition">
+ <div class="flex justify-between gap-3 mb-3">
+ <h4 class="font-bold text-lg break-all">${safe(r.name)}</h4>
+ <span class="tag">${safe(r.language)}</span>
+ </div>
+ <p class="muted min-h-14">${safe(r.description)}</p>
+ <div class="flex gap-5 mt-5 text-sm">
+ <span>⭐ ${r.stars}</span>
+ <span>⑂ ${r.forks}</span>
+ </div>
+ <p class="muted mt-3">Updated: ${safe(r.updated.slice(0,10))}</p>
+ <a href="${safe(r.url)}" target="_blank" rel="noopener"
+ class="block mt-4">View Repository ↗</a>
+ </article>
+ `).join(""):
+ '<p class="muted">No matching repositories found.</p>';
+}
+
+async function analyze(){
+ if(!profile)return alert("Load your GitHub profile first");
+ const description=$("job").value.trim();
+ if(!description)return alert("Paste a job description");
+
+ $("matchResult").textContent="Analyzing...";
+ try{
+ const result=await post("/api/match",{
+ username:profile.user.login,description
+ });
+
+ if(result.score===null){
+ $("matchBadge").textContent="N/A";
+ $("matchResult").textContent=
+ "No recognized technical skills found in the description.";
+ return;
+ }
+
+ $("matchBadge").textContent=result.score+"%";
+ $("matchResult").innerHTML=`
+ <p class="text-4xl font-bold text-indigo-400 mb-4">${result.score}% Match</p>
+ <div class="bg-slate-700 rounded-full h-3 overflow-hidden mb-5">
+ <div class="bg-indigo-500 h-full" style="width:${result.score}%"></div>
+ </div>
+ <p class="text-green-400 font-semibold">Matched Skills</p>
+ <p class="mb-4">${safe(result.matched.join(", ")||"None")}</p>
+ <p class="text-amber-400 font-semibold">Missing Skills</p>
+ <p class="mb-4">${safe(result.missing.join(", ")||"None")}</p>
+ <p class="muted">${safe(result.note)}</p>`;
+ }catch(e){
+ $("matchResult").textContent=e.message;
+ }
+}
+
+async function askAssistant(){
+ if(!profile)return alert("Load your profile first");
+ const question=$("question").value.trim();
+ if(!question)return;
+
+ const history=$("chatHistory");
+ const user=document.createElement("p");
+ user.textContent="You: "+question;
+ user.className="text-indigo-300";
+ history.appendChild(user);
+
+ try{
+ const result=await post("/api/chat",{
+ username:profile.user.login,question
+ });
+ const reply=document.createElement("p");
+ reply.textContent="Assistant: "+result.answer;
+ reply.className="text-slate-200";
+ history.appendChild(reply);
+ $("question").value="";
+ }catch(e){alert(e.message)}
+}
+
+async function generateReadme(){
+ if(!profile)return alert("Load your profile first");
+ const repository=$("repoSelect").value;
+ if(!repository)return alert("Select a repository");
+
+ try{
+ const result=await post("/api/readme",{
+ username:profile.user.login,repository
+ });
+ $("readmeOutput").value=result.readme;
+ }catch(e){alert(e.message)}
+}
+
+async function copyReadme(){
+ const text=$("readmeOutput").value;
+ if(!text)return alert("Generate a README first");
+ await navigator.clipboard.writeText(text);
+ alert("README copied!");
+}
+
+loadProfile();
+</script>
+</body>
+</html>
